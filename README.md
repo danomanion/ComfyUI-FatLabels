@@ -9,6 +9,7 @@ ComfyUI Fat Labels is a super simple custom node for Comfy UI, to generate text,
 This is a modified version that adds inputs for:
 - The Font Path
 - HEX values to change Text and Background colors
+- (NEW) Now with kerning! (aka: line spacing)
 
 ![Alt text for the image](docs/screenshots/0.2.1--update.png)
 

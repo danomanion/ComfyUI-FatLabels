@@ -121,6 +121,7 @@ class FatLabels:
                 "font_color_hex": ("STRING", {"default": "#FFFFFF", "multiline": False}),
                 "background_color_hex": ("STRING", {"default": "#000000", "multiline": False}),
                 "font_size": ("INT", {"default": 72, "min": 1}),  # Font size in pixels
+                "kerning_value": ("FLOAT", {"default": 0.0}),  # New input for kerning
             }
         }
 
@@ -128,7 +129,7 @@ class FatLabels:
     FUNCTION = "create_fat_label"
     CATEGORY = "image/text"
 
-    def create_fat_label(self, text, background_color_hex, font_color_hex, font_path, font_size,):
+    def create_fat_label(self, text, background_color_hex, font_color_hex, font_path, font_size, kerning_value):
         bg_color = ImageColor.getrgb(background_color_hex)
         font_color = ImageColor.getrgb(font_color_hex)
 
@@ -145,7 +146,13 @@ class FatLabels:
         draw = ImageDraw.Draw(canvas)
         x = (canvas_width - text_width) // 2
         y = (canvas_height - text_height) // 2
-        draw.text((x, y), text, fill=font_color, font=font)
+
+        for i in range(len(text) - 1):
+            ch = text[i]
+            ch_width, ch_height = font.getsize(ch)
+            draw.text((x, y), ch, fill=font_color, font=font)
+            x += ch_width + kerning_value  # Add kerning value between characters
+        draw.text((x, y), text[-1], fill=font_color, font=font)  # Draw the last character
 
         # Convert to PyTorch tensor efficiently
         image_tensor_out = torch.tensor(np.array(canvas) / 255.0, dtype=torch.float32).unsqueeze(0)
