@@ -106,7 +106,28 @@ try:
 except Exception:
     process_wrap(pip_install + ['freetype-py'])
 
-print(f"### Loading: Fat Labels (V0.2.1)")
+print(f"### Loading: Fat Labels (v0.2.3)")
+
+class FatLabels:
+    def __init__(self, device="cpu"):
+        self.device = device
+
+    @classmethod
+    def INPUT_TYPES(cls):
+        return {
+            "required": {
+                "text": ("STRING", {"default": "Hello"}),
+                "font_path": ("STRING", {"default": f"{fat_labels__path}/fonts/Bevan-Regular.ttf", "multiline": False}),
+                "font_color_hex": ("STRING", {"default": "#FFFFFF", "multiline": False}),
+                "background_color_hex": ("STRING", {"default": "#000000", "multiline": False}),
+                "font_size": ("INT", {"default": 72, "min": 1}),  # Font size in pixels
+                "kerning_value": ("FLOAT", {"default": 0.0}),  # New input for kerning
+            }
+        }
+
+    RETURN_TYPES = ("IMAGE",)
+    FUNCTION = "create_fat_label"
+    CATEGORY = "image/text"
 
 class FatLabels:
     def __init__(self, device="cpu"):
@@ -133,33 +154,51 @@ class FatLabels:
         bg_color = ImageColor.getrgb(background_color_hex)
         font_color = ImageColor.getrgb(font_color_hex)
 
-        # Calculate text dimensions directly without creating a temporary canvas
-        font = ImageFont.truetype(font_path, font_size)
-        text_width, text_height = font.getsize(text)
+        # Initial font size and maximum attempts for fitting text
+        current_font_size = font_size
+        max_attempts = 10
 
-        # Create canvas with appropriate dimensions and padding
-        canvas_width = text_width + 40  # Add 20px padding on each side
-        canvas_height = text_height + 40
-        canvas = Image.new("RGB", (canvas_width, canvas_height), bg_color)
+        for _ in range(max_attempts):
+            font = ImageFont.truetype(font_path, current_font_size)
 
-        # Draw text directly on the canvas
-        draw = ImageDraw.Draw(canvas)
-        x = (canvas_width - text_width) // 2
-        y = (canvas_height - text_height) // 2
+            # Calculate actual text width with kerning
+            actual_text_width = 0
+            for i in range(len(text) - 1):
+                ch = text[i]
+                ch_width, _ = font.getsize(ch)
+                actual_text_width += ch_width + kerning_value
+            ch = text[-1]
+            ch_width, _ = font.getsize(ch)  # Width of the last character
+            actual_text_width += ch_width
 
-        for i in range(len(text) - 1):
-            ch = text[i]
-            ch_width, ch_height = font.getsize(ch)
-            draw.text((x, y), ch, fill=font_color, font=font)
-            x += ch_width + kerning_value  # Add kerning value between characters
-        draw.text((x, y), text[-1], fill=font_color, font=font)  # Draw the last character
+            # Calculate text height
+            text_height = font.getsize(text)[1]
 
-        # Convert to PyTorch tensor efficiently
-        image_tensor_out = torch.tensor(np.array(canvas) / 255.0, dtype=torch.float32).unsqueeze(0)
+            # Create canvas with appropriate width and height (using integers)
+            canvas_width = int(actual_text_width + 40)
+            canvas_height = int(text_height + 40)
+            canvas = Image.new("RGB", (canvas_width, canvas_height), bg_color)
 
-        return (image_tensor_out,)
+            # Draw text with adjusted font size and kerning (using integers for coordinates)
+            draw = ImageDraw.Draw(canvas)
+            x = int((canvas_width - actual_text_width) // 2)
+            y = int((canvas_height - text_height) // 2)
 
+            for i in range(len(text) - 1):
+                ch = text[i]
+                ch_width, _ = font.getsize(ch)
+                draw.text((x, y), ch, fill=font_color, font=font)
+                x += int(ch_width) + int(kerning_value)  # Add integers for positioning
+            draw.text((x, y), text[-1], fill=font_color, font=font)
+
+            # Convert to PyTorch tensor efficiently
+            image_tensor_out = torch.tensor(np.array(canvas) / 255.0, dtype=torch.float32).unsqueeze(0)
+
+            return (image_tensor_out,)
 
 NODE_CLASS_MAPPINGS = {
     "FatLabels": FatLabels,
 }
+
+
+
