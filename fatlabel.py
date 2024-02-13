@@ -58,7 +58,7 @@ def get_installed_packages():
             result = subprocess.check_output([sys.executable, '-m', 'pip', 'list'], universal_newlines=True)
             pip_list = set([line.split()[0].lower() for line in result.split('\n') if line.strip()])
         except subprocess.CalledProcessError as e:
-            print(f"[ComfyUI-Manager] Failed to retrieve the information of installed pip packages.")
+            print(f"🏷️ FATLABEL (ComfyUI-Manager): Failed to retrieve the information of installed pip packages.")
             return set()
     
     return pip_list
@@ -87,7 +87,7 @@ def is_requirements_installed(file_path):
                     
     return True
 
-print("🏷️ FATLABEL: Check dependencies")
+print(f"🏷️ FATLABEL (check dependencies)")
 
 if "python_embeded" in sys.executable or "python_embedded" in sys.executable:
     pip_install = [sys.executable, '-s', '-m', 'pip', 'install']
@@ -106,7 +106,7 @@ try:
 except Exception:
     process_wrap(pip_install + ['freetype-py'])
 
-print(f"### Loading: Fat Labels (v0.2.3)")
+print(f"🏷️ FATLABEL (loading) : (v0.2.4)")
 
 class BasicFatLabel:
     def __init__(self, device="cpu"):
